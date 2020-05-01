@@ -9,7 +9,8 @@
   "author": "Ravi",
   "license": "ISC",
   "dependencies": {
-    "socket.io": "*",
-    "express": "*"
+    "express": "*",
+    "pg": "^8.0.3",
+    "socket.io": "*"
   }
 }
