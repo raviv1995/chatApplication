@@ -1,54 +1,12 @@
 #!/usr/bin/env bash
 
-# Run this file as the database user
+source ./data_service.sh
 
 cleanup() {
     stop_data_service
     rm -rf /var/spool/chatapp
     exit 1
 }
-
-start_data_service() {
-    echo "Starting Chat dataservice..."
-    pgdata="/var/spool/chatapp/datastore"
-    export PGDATA="/var/spool/chatapp/datastore"
-    cd ${pgdata}
-    if [ $? -ne 0 ] ; then
-        echo "Could not change directory to ${pgdata}"
-        cleanup
-    fi
-    pgstartfile="${pgdata}/am_pgstartfile"
-    dbuser="postgres"
-    dbport=9876
-    su - ${dbuser} -c "/bin/sh -c '${PG_CTL} start -w -D ${pgdata} -l ${pgstartfile} -o \"-p ${dbport} -k ${pgdata}\"'"
-    if [ $? -ne 0 ] ; then
-        echo "Unable to start AM dataservice."
-        cleanup
-    fi
-    echo "Chatapp dataservice started successfully."
-    cd ${CWD}
-}
-
-stop_data_service() {
-    echo "Stopping AM dataservice..."
-    pgdata="/var/spool/chatapp/datastore"
-    export PGDATA="/var/spool/chatapp/datastore"
-    cd ${pgdata}
-    if [ $? -ne 0 ] ; then
-        echo "Could not change directory to ${pgdata}"
-        cleanup
-    fi
-    dbuser="postgres"
-    dbport=9876
-    res=$(su - ${dbuser} -c "/bin/sh -c '${PG_CTL} -D ${pgdata} -o \"-p ${dbport}\" -w stop'")
-    if [ $? -ne 0 ] ; then
-        echo "Failed to stop AM data service"
-        cleanup
-    fi
-    echo "Chatapp data service stopped"
-    cd ${CWD}
-}
-
 
 db_trust_login() {
     datastore_dir=/var/spool/chatapp/datastore
@@ -65,7 +23,6 @@ db_trust_login() {
     fi
     return 0
 }
-
 
 initialize_db() {
     PGSQL_CMD=$(type psql 2>/dev/null | cut -d' ' -f3)
@@ -86,8 +43,8 @@ initialize_db() {
     echo "**"
     dbuser="postgres"
     dbport=9876
-    pgpasswd="/var/spool/chatapp/am_pgpassword"
-    pguser="/var/spool/chatapp/am_pguser"
+    pgpasswd="/var/spool/chatapp/pgpassword"
+    pguser="/var/spool/chatapp/pguser"
     pgdata="/var/spool/chatapp/datastore"
     pgpass=$(cat /dev/urandom | tr -dc A-Z-a-z-0-9 | head -c32)
     if [ -d ${pgdata} ] ; then
@@ -119,12 +76,12 @@ initialize_db() {
         echo "Unable to initialize database."
         cleanup
     fi
-    rm -rf "/var/spool/chatapp/am_pgpassword"
+    rm -rf "/var/spool/chatapp/pgpassword"
     if [ $? -ne 0 ] ; then
         echo "Unable to remove file from /var/spool/chatapp directory."
         cleanup
     fi
-    chmod 0600 "/var/spool/chatapp/am_pguser"
+    chmod 0600 "/var/spool/chatapp/pguser"
     if [ $? -ne 0 ] ; then
         echo "Unable to change permissions of database username: /var/spool/chatapp. Unable to initialize database."
         cleanup
